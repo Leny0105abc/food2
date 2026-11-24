@@ -1,0 +1,263 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User nutrition targets, meal reminder schedule, dietary defaults, and theme preference.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 200
+        },
+        "calorieGoal": {
+          "type": "number"
+        },
+        "proteinGoal": {
+          "type": "number"
+        },
+        "carbsGoal": {
+          "type": "number"
+        },
+        "fatGoal": {
+          "type": "number"
+        },
+        "dietaryDefaults": {
+          "type": "array"
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["light", "dark"]
+        },
+        "remindersEnabled": {
+          "type": "boolean"
+        },
+        "breakfastTime": {
+          "type": "string",
+          "maxLength": 5,
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "lunchTime": {
+          "type": "string",
+          "maxLength": 5,
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "dinnerTime": {
+          "type": "string",
+          "maxLength": 5,
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "email",
+        "calorieGoal",
+        "proteinGoal",
+        "carbsGoal",
+        "fatGoal",
+        "dietaryDefaults",
+        "theme",
+        "remindersEnabled",
+        "breakfastTime",
+        "lunchTime",
+        "dinnerTime",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SavedRecipe": {
+      "title": "SavedRecipe",
+      "description": "User bookmarked or offline-pinned recipe with personal cooking note.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "recipeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "offlinePinned": {
+          "type": "boolean"
+        },
+        "personalNote": {
+          "type": "string",
+          "maxLength": 600
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "recipeId",
+        "offlinePinned",
+        "personalNote",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "MealPlanEntry": {
+      "title": "MealPlanEntry",
+      "description": "Scheduled dish assigned to a calendar date and meal slot.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "slot": {
+          "type": "string",
+          "enum": ["breakfast", "lunch", "dinner", "snack"]
+        },
+        "recipeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "servings": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "date",
+        "slot",
+        "recipeId",
+        "servings",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "GroceryItem": {
+      "title": "GroceryItem",
+      "description": "Single aisle-grouped grocery item synced across user devices.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "amount": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "aisle": {
+          "type": "string",
+          "enum": [
+            "Produce",
+            "Meat & Seafood",
+            "Pantry & Sauces",
+            "Dairy & Eggs",
+            "Herbs & Spices",
+            "Bakery & Grains"
+          ]
+        },
+        "checked": {
+          "type": "boolean"
+        },
+        "sourceRecipeTitle": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "name",
+        "amount",
+        "unit",
+        "aisle",
+        "checked",
+        "sourceRecipeTitle",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Private user profile, nutrition goals, and meal reminder preferences."
+    },
+    "/users/{userId}/savedRecipes/{recipeId}": {
+      "schema": {
+        "$ref": "#/entities/SavedRecipe"
+      },
+      "description": "Bookmarked and offline-cached recipe metadata and notes per user."
+    },
+    "/users/{userId}/mealPlans/{planId}": {
+      "schema": {
+        "$ref": "#/entities/MealPlanEntry"
+      },
+      "description": "Scheduled daily meal slots per user."
+    },
+    "/users/{userId}/groceryItems/{itemId}": {
+      "schema": {
+        "$ref": "#/entities/GroceryItem"
+      },
+      "description": "Synced grocery list items grouped by supermarket aisle per user."
+    }
+  }
+}

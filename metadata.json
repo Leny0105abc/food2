@@ -1,0 +1,6 @@
+{
+  "name": "Kusina & Co.",
+  "description": "Multi-cuisine cooking companion for Filipino, Chinese, Italian, and International recipes with offline step-by-step video tutorials, timers, grocery generator, meal planner, nutrition rings, and cloud sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,72 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --background: #FAF9F6;
+    --surface: #FFFFFF;
+    --surface-muted: #F2EFE9;
+    --foreground: #1A1918;
+    --muted: #6B6760;
+    --accent: #2E5A44;
+    --accent-hover: #234735;
+    --amber-alert: #D97706;
+    --border-hairline: rgba(26, 25, 24, 0.09);
+  }
+
+  .dark {
+    --background: #141413;
+    --surface: #1E1D1B;
+    --surface-muted: #272522;
+    --foreground: #F4F2ED;
+    --muted: #A39E93;
+    --accent: #4A8B6B;
+    --accent-hover: #5BA07D;
+    --amber-alert: #F59E0B;
+    --border-hairline: rgba(244, 242, 237, 0.11);
+  }
+
+  html {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: var(--background);
+    color: var(--foreground);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    margin: 0;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+}
+
+.font-display {
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+.font-mono-num {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

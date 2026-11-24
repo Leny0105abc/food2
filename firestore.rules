@@ -1,0 +1,286 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: deny everything by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Reusable Security Primitives ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function hasValidParentUser(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    // --- Validation Blueprints ---
+    function isValidUserProfile(data) {
+      return data.uid is string
+        && data.uid == request.auth.uid
+        && isValidId(data.uid)
+        && data.displayName is string
+        && data.displayName.size() >= 1
+        && data.displayName.size() <= 100
+        && data.email is string
+        && data.email.size() >= 3
+        && data.email.size() <= 200
+        && data.calorieGoal is number
+        && data.calorieGoal >= 800
+        && data.calorieGoal <= 8000
+        && data.proteinGoal is number
+        && data.proteinGoal >= 20
+        && data.proteinGoal <= 500
+        && data.carbsGoal is number
+        && data.carbsGoal >= 10
+        && data.carbsGoal <= 800
+        && data.fatGoal is number
+        && data.fatGoal >= 10
+        && data.fatGoal <= 400
+        && data.dietaryDefaults is list
+        && data.dietaryDefaults.size() <= 8
+        && (data.dietaryDefaults.size() == 0 || (data.dietaryDefaults[0] is string && data.dietaryDefaults[0].size() <= 32))
+        && data.theme is string
+        && (data.theme == 'light' || data.theme == 'dark')
+        && data.remindersEnabled is bool
+        && data.breakfastTime is string
+        && data.breakfastTime.size() == 5
+        && data.breakfastTime.matches('^([01]\\d|2[0-3]):[0-5]\\d$')
+        && data.lunchTime is string
+        && data.lunchTime.size() == 5
+        && data.lunchTime.matches('^([01]\\d|2[0-3]):[0-5]\\d$')
+        && data.dinnerTime is string
+        && data.dinnerTime.size() == 5
+        && data.dinnerTime.matches('^([01]\\d|2[0-3]):[0-5]\\d$')
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSavedRecipe(data) {
+      return data.ownerId is string
+        && data.ownerId == request.auth.uid
+        && isValidId(data.ownerId)
+        && data.recipeId is string
+        && data.recipeId.size() >= 1
+        && data.recipeId.size() <= 80
+        && data.recipeId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.offlinePinned is bool
+        && data.personalNote is string
+        && data.personalNote.size() <= 600
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMealPlanEntry(data) {
+      return data.ownerId is string
+        && data.ownerId == request.auth.uid
+        && isValidId(data.ownerId)
+        && data.date is string
+        && data.date.size() == 10
+        && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.slot is string
+        && (data.slot == 'breakfast' || data.slot == 'lunch' || data.slot == 'dinner' || data.slot == 'snack')
+        && data.recipeId is string
+        && data.recipeId.size() >= 1
+        && data.recipeId.size() <= 80
+        && data.recipeId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.servings is number
+        && data.servings >= 1
+        && data.servings <= 20
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidGroceryItem(data) {
+      return data.ownerId is string
+        && data.ownerId == request.auth.uid
+        && isValidId(data.ownerId)
+        && data.name is string
+        && data.name.size() >= 1
+        && data.name.size() <= 120
+        && data.amount is number
+        && data.amount >= 0
+        && data.amount <= 10000
+        && data.unit is string
+        && data.unit.size() <= 32
+        && data.aisle is string
+        && (
+          data.aisle == 'Produce'
+          || data.aisle == 'Meat & Seafood'
+          || data.aisle == 'Pantry & Sauces'
+          || data.aisle == 'Dairy & Eggs'
+          || data.aisle == 'Herbs & Spices'
+          || data.aisle == 'Bakery & Grains'
+        )
+        && data.checked is bool
+        && data.sourceRecipeTitle is string
+        && data.sourceRecipeTitle.size() <= 120
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && incoming().keys().hasAll([
+          'uid', 'displayName', 'email', 'calorieGoal', 'proteinGoal',
+          'carbsGoal', 'fatGoal', 'dietaryDefaults', 'theme',
+          'remindersEnabled', 'breakfastTime', 'lunchTime', 'dinnerTime',
+          'createdAt', 'updatedAt'
+        ])
+        && incoming().keys().hasOnly([
+          'uid', 'displayName', 'email', 'calorieGoal', 'proteinGoal',
+          'carbsGoal', 'fatGoal', 'dietaryDefaults', 'theme',
+          'remindersEnabled', 'breakfastTime', 'lunchTime', 'dinnerTime',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidUserProfile(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'displayName', 'calorieGoal', 'proteinGoal', 'carbsGoal', 'fatGoal',
+            'dietaryDefaults', 'theme', 'remindersEnabled',
+            'breakfastTime', 'lunchTime', 'dinnerTime', 'updatedAt'
+          ])
+        );
+
+      allow delete: if false;
+
+      match /savedRecipes/{recipeId} {
+        allow get: if isValidId(userId) && isValidId(recipeId) && isOwner(userId);
+        allow list: if isOwner(userId) && existing().ownerId == request.auth.uid;
+
+        allow create: if isValidId(userId)
+          && isValidId(recipeId)
+          && isOwner(userId)
+          && incoming().keys().hasAll([
+            'ownerId', 'recipeId', 'offlinePinned', 'personalNote', 'createdAt', 'updatedAt'
+          ])
+          && incoming().keys().hasOnly([
+            'ownerId', 'recipeId', 'offlinePinned', 'personalNote', 'createdAt', 'updatedAt'
+          ])
+          && isValidSavedRecipe(incoming())
+          && incoming().recipeId == recipeId
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && hasValidParentUser(userId);
+
+        allow update: if isValidId(userId)
+          && isValidId(recipeId)
+          && isOwner(userId)
+          && isValidSavedRecipe(incoming())
+          && incoming().ownerId == existing().ownerId
+          && incoming().recipeId == existing().recipeId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'offlinePinned', 'personalNote', 'updatedAt'
+          ]);
+
+        allow delete: if isValidId(userId) && isValidId(recipeId) && isOwner(userId);
+      }
+
+      match /mealPlans/{planId} {
+        allow get: if isValidId(userId) && isValidId(planId) && isOwner(userId);
+        allow list: if isOwner(userId) && existing().ownerId == request.auth.uid;
+
+        allow create: if isValidId(userId)
+          && isValidId(planId)
+          && isOwner(userId)
+          && incoming().keys().hasAll([
+            'ownerId', 'date', 'slot', 'recipeId', 'servings', 'createdAt', 'updatedAt'
+          ])
+          && incoming().keys().hasOnly([
+            'ownerId', 'date', 'slot', 'recipeId', 'servings', 'createdAt', 'updatedAt'
+          ])
+          && isValidMealPlanEntry(incoming())
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && hasValidParentUser(userId);
+
+        allow update: if isValidId(userId)
+          && isValidId(planId)
+          && isOwner(userId)
+          && isValidMealPlanEntry(incoming())
+          && incoming().ownerId == existing().ownerId
+          && incoming().date == existing().date
+          && incoming().slot == existing().slot
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'recipeId', 'servings', 'updatedAt'
+          ]);
+
+        allow delete: if isValidId(userId) && isValidId(planId) && isOwner(userId);
+      }
+
+      match /groceryItems/{itemId} {
+        allow get: if isValidId(userId) && isValidId(itemId) && isOwner(userId);
+        allow list: if isOwner(userId) && existing().ownerId == request.auth.uid;
+
+        allow create: if isValidId(userId)
+          && isValidId(itemId)
+          && isOwner(userId)
+          && incoming().keys().hasAll([
+            'ownerId', 'name', 'amount', 'unit', 'aisle', 'checked', 'sourceRecipeTitle', 'createdAt', 'updatedAt'
+          ])
+          && incoming().keys().hasOnly([
+            'ownerId', 'name', 'amount', 'unit', 'aisle', 'checked', 'sourceRecipeTitle', 'createdAt', 'updatedAt'
+          ])
+          && isValidGroceryItem(incoming())
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && hasValidParentUser(userId);
+
+        allow update: if isValidId(userId)
+          && isValidId(itemId)
+          && isOwner(userId)
+          && isValidGroceryItem(incoming())
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['checked', 'updatedAt'])
+            || incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'unit', 'checked', 'sourceRecipeTitle', 'updatedAt'])
+          );
+
+        allow delete: if isValidId(userId) && isValidId(itemId) && isOwner(userId);
+      }
+    }
+  }
+}
